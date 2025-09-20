@@ -20,6 +20,10 @@ Open http://localhost:5173 (default) and click the top menu items to see the dro
 - `src/hooks/useAnimatedHeight.ts` — hook powering the CSS height transition
 - `src/utils/domAnimation.ts` — utility `lockCurrentHeight(el)` to smooth swaps
 
+## Demo page
+
+https://r-4u-1.github.io/m3nu4nimation/
+
 ## Notes
 
 - The project originally started from a Vite template; template visuals and docs were removed to keep this project focused.
