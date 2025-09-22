@@ -1,6 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { AnimatedCollapse } from './components/AnimatedCollapse';
-import { lockCurrentHeight } from './utils/domAnimation';
+import React, { useState } from 'react';
+import { useAnimatedHeight } from './hooks/useAnimatedHeight';
 import './SlidingMenu.css';
 
 interface MenuItem {
@@ -16,18 +15,24 @@ const menuItems: MenuItem[] = [
 
 export const SlidingMenu: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const collapseRef = useRef<HTMLDivElement | null>(null);
+  const isOpen = openIndex !== null;
+  const { containerRef, innerRef, lockForSwap } = useAnimatedHeight(isOpen, {
+    durationMs: 1000,
+    timing: 'cubic-bezier(0.7, 0, 0.3, 1)',
+    contentKey: openIndex ?? 'closed',
+  });
 
   const handleMenuClick = (idx: number) => {
-    if (openIndex !== null && idx !== openIndex) {
-  if (collapseRef.current) lockCurrentHeight(collapseRef.current);
-      requestAnimationFrame(() => setOpenIndex(idx));
-      return;
+    const next = openIndex === idx ? null : idx
+    // If we are swapping content while open, lock current height to ensure animation
+    if (isOpen && next !== openIndex) {
+      lockForSwap()
+      // Defer state update to the next frame so the lock is committed before content swap
+      requestAnimationFrame(() => setOpenIndex(next))
+      return
     }
-    setOpenIndex(openIndex === idx ? null : idx);
+    setOpenIndex(next)
   };
-
-  const isOpen = openIndex !== null;
 
   return (
     <div className="sliding-menu-container">
@@ -46,32 +51,31 @@ export const SlidingMenu: React.FC = () => {
         ))}
       </nav>
 
-      <AnimatedCollapse
-  ref={collapseRef}
+      <div
         id="submenu"
         className={`submenu${isOpen ? ' open' : ''}`}
-        labelledBy={isOpen ? `menu-bar-item-${openIndex}` : undefined}
-        ariaHidden={!isOpen}
-        isOpen={isOpen}
-        contentKey={openIndex ?? 'closed'}
-        durationMs={1000}
-        timing={'cubic-bezier(0.7, 0, 0.3, 1)'}
+        aria-hidden={!isOpen}
+        role="region"
+        aria-labelledby={isOpen ? `menu-bar-item-${openIndex}` : undefined}
+        ref={containerRef}
       >
-        {isOpen && (
-          <ul role="menu">
-            {menuItems[openIndex!].submenu.map((sub, subIdx) => (
-              <li
-                key={subIdx}
-                role="menuitem"
-                tabIndex={0}
-                aria-label={sub}
-              >
-                {sub}
-              </li>
-            ))}
-          </ul>
-        )}
-      </AnimatedCollapse>
+        <div className="submenu-inner" ref={innerRef}>
+          {isOpen && (
+            <ul role="menu">
+              {menuItems[openIndex!].submenu.map((sub, subIdx) => (
+                <li
+                  key={subIdx}
+                  role="menuitem"
+                  tabIndex={0}
+                  aria-label={sub}
+                >
+                  {sub}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
